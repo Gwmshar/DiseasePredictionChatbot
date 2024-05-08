@@ -105,8 +105,6 @@ def chatLogic(data):
                 return("Are you suffuring from "+related_sym[idx-1]+" (yes/no)")
             else:
                 idx=idx+1
-    if len(related_sym)==0:
-        return ("Do you more symptoms ?")
     if data=="yes" and flag==1 and count<=3:
         count=count+1
         if idx <= len(related_sym) and related_sym[idx-1] not in userHas:
@@ -149,9 +147,11 @@ def chatLogic(data):
                     result=descDiscrip[x]
                     break
             return ("You may have "+predicted+"\nDescription of "+predicted+": "+result)
+        elif data!="yes" or data!="no" and count==5:
+            return ("Please type only yes or no")
         else:
             count=count+1
-            return ("Do you have more symptoms ?")
+            return ("Do you have more symptoms ? (yes or no)")
             
 @app.route("/reset",methods=['POST'])
 def reset():
