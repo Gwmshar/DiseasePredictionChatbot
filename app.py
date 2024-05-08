@@ -11,15 +11,8 @@ nlp=spacy.load("en_core_web_md")
 
 df = pd.read_csv('./dataset/originalmini.csv')
 disc=pd.read_csv('./dataset/symptom_Description.csv')
-prec=pd.read_csv('./dataset/symptom_precaution.csv')
 descDis=disc['Disease'].unique()
 descDiscrip=disc['Description'].unique()
-precDis=prec['Disease'].unique()
-precDis = [string.strip() for string in precDis]
-prec1=prec['Precaution_1'].unique()
-prec2=prec['Precaution_2'].unique()
-prec3=prec['Precaution_3'].unique()
-prec4=prec['Precaution_4'].unique()
 df.columns = [s.replace('_', ' ') for s in df.columns]
 symps=df.columns[1:]
 diseases=df['Disease'].unique()
@@ -95,36 +88,50 @@ def chatLogic(data):
         user_symp=extract_symp(data)    
         most_sim_symp=find_most_sim(user_symp,diseases_list)
         related_sym=suggest(most_sim_symp,diseases_list)
+        print(related_sym)
         for x in range(0,len(most_sim_symp)):
             userHas.append(most_sim_symp[x])
-        flag=1    
+        flag=1
+        idx=0    
         while idx < len(related_sym):
-            if related_sym[idx] not in userHas:
+            if related_sym[idx] not in userHas and related_sym[idx] not in userNotHave:
                 idx=idx+1
                 count=count+1
                 return("Are you suffuring from "+related_sym[idx-1]+" (yes/no)")
             else:
                 idx=idx+1
     if data=="yes" and flag==1 and count<=3:
+        most_sim_symp=find_most_sim(userHas,diseases_list)
+        related_sym=suggest(most_sim_symp,diseases_list)
         count=count+1
         if idx <= len(related_sym) and related_sym[idx-1] not in userHas:
             userHas.append(related_sym[idx-1])
         if count<=3:
+            idx=0
             while idx < len(related_sym):
-                if related_sym[idx] not in userHas:
+                if related_sym[idx] not in userHas and related_sym[idx] not in userNotHave:
                     idx=idx+1
                     return ("Are you suffuring from "+related_sym[idx-1]+" (yes/no)")
                 else:
                     idx=idx+1
+            count=5
+            return("Do you have more symptoms ? (yes or no)")
     elif data=="no" and flag==1 and count<=3:
+        most_sim_symp=find_most_sim(userHas,diseases_list)
+        related_sym=suggest(most_sim_symp,diseases_list)
         count=count+1
+        if idx <= len(related_sym) and related_sym[idx-1] not in userNotHave:
+            userNotHave.append(related_sym[idx-1])
         if count<=3:
+            idx=0
             while idx < len(related_sym):
-                if related_sym[idx] not in userHas:
+                if related_sym[idx] not in userHas and related_sym[idx] not in userNotHave:
                     idx=idx+1
                     return ("Are you suffuring from "+related_sym[idx-1]+" (yes/no)")
                 else:
                     idx=idx+1
+            count=5
+            return("Do you have more symptoms ? (yes or no)")
     elif flag==1 and count<=3:
         return ("Please type only yes or no")
     if count==4 or count==5:
@@ -133,6 +140,8 @@ def chatLogic(data):
             flag=0
             return ("Ok give more symptoms")
         elif data=="no" and count==5:
+            if len(userHas)<=3:
+                return ("Sorry we can not detect disese with only those provide symptoms")
             ar=[0]*131
             for i in range(0,len(userHas)):
                 for j in range(0,len(symps)):
@@ -147,8 +156,6 @@ def chatLogic(data):
                     result=descDiscrip[x]
                     break
             return ("You may have "+predicted+"\nDescription of "+predicted+": "+result)
-        elif data!="yes" or data!="no" and count==5:
-            return ("Please type only yes or no")
         else:
             count=count+1
             return ("Do you have more symptoms ? (yes or no)")
