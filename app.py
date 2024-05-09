@@ -4,6 +4,7 @@ from flask import Flask,jsonify,request
 from flask_cors import CORS
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from textblob import TextBlob
 import numpy as np
 import spacy
 
@@ -32,6 +33,10 @@ for disease in diseases:
 
 diseases_list = [{"name": disease, "symptoms": symptoms} for disease, symptoms in disease_symp.items()]
 
+def fix_spelling(text):
+    blob = TextBlob(text)
+    corrected_text = blob.correct()
+    return str(corrected_text)
 def calc_sim(user_symp, data_symp):
     user_vect = nlp(user_symp).vector
     data_vector = [nlp(symptom).vector for symptom in data_symp]
@@ -84,6 +89,8 @@ idx=0
 
 def chatLogic(data):
     global flag,related_sym,userHas,userNotHave,count,idx,symps
+    data=data.lower()
+    data=fix_spelling(data)
     if flag==0:
         user_symp=extract_symp(data)    
         most_sim_symp=find_most_sim(user_symp,diseases_list)
@@ -140,7 +147,7 @@ def chatLogic(data):
             flag=0
             return ("Ok give more symptoms")
         elif data=="no" and count==5:
-            if len(userHas)<=3:
+            if len(userHas)<=2:
                 return ("Sorry we can not detect disese with only those provide symptoms")
             ar=[0]*131
             for i in range(0,len(userHas)):
@@ -156,6 +163,8 @@ def chatLogic(data):
                     result=descDiscrip[x]
                     break
             return ("You may have "+predicted+"\nDescription of "+predicted+": "+result)
+        elif data!="yes" and data!="no":
+            return("Please type only yes or no")
         else:
             count=count+1
             return ("Do you have more symptoms ? (yes or no)")
